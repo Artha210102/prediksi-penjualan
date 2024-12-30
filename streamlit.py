@@ -1,88 +1,66 @@
-# Import necessary libraries
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Set the title of the app
-st.title("Sales Prediction App")
+# Judul aplikasi
+st.title("Prediksi Harga Rumah dengan Streamlit")
 
-# File upload section
-st.sidebar.header("Upload Dataset")
-uploaded_file = st.sidebar.file_uploader("Upload your Excel file", type=["xlsx"])
+# Upload file data
+data_file = st.file_uploader("Upload file dataset (CSV)", type=["csv"])
 
-if uploaded_file is not None:
-    # Read the uploaded file
-    df = pd.read_excel(uploaded_file, engine='openpyxl')
+if data_file is not None:
+    # Membaca dataset
+    try:
+        df = pd.read_csv(data_file)
+        st.success("Dataset berhasil dimuat!")
 
-    # Show the first 5 rows of the dataset
-    st.header("Dataset Overview")
-    st.write(df.head())
+        # Menampilkan data
+        st.subheader("Data")
+        st.write(df.head())
 
-    # Show general information about the dataset
-    st.subheader("Data Information")
-    st.write(df.info())
+        # Menampilkan informasi dataset
+        st.subheader("Informasi Dataset")
+        st.write(df.describe())
 
-    # Show basic statistics
-    st.subheader("Statistical Summary")
-    st.write(df.describe())
+        # Memilih fitur dan target
+        st.subheader("Pilih Fitur dan Target")
+        all_columns = df.columns.tolist()
+        target_column = st.selectbox("Pilih kolom target (harga rumah)", all_columns)
+        feature_columns = st.multiselect("Pilih kolom fitur", all_columns, default=all_columns[:-1])
 
-    # Show missing values
-    st.subheader("Missing Values")
-    st.write(df.isnull().sum())
+        if target_column and feature_columns:
+            X = df[feature_columns]
+            y = df[target_column]
 
-    # Data visualization section
-    st.header("Exploratory Data Analysis (EDA)")
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Visualizing distributions for features
-    st.subheader("Visualize Data Distribution")
-    columns = df.columns
-    feature = st.selectbox("Choose a feature to analyze", columns)
-    fig = plt.figure(figsize=(10, 4))
-    sns.histplot(df[feature], kde=True)
-    st.pyplot(fig)
+            # Melatih model
+            st.subheader("Pelatihan Model")
+            model = RandomForestRegressor(random_state=42)
+            model.fit(X_train, y_train)
 
-    # Correlation heatmap
-    st.subheader("Correlation Heatmap")
-    fig, ax = plt.subplots(figsize=(12, 8))
-    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", ax=ax)
-    st.pyplot(fig)
+            # Evaluasi model
+            st.subheader("Evaluasi Model")
+            y_pred = model.predict(X_test)
+            mse = mean_squared_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+            st.write(f"Mean Squared Error: {mse}")
+            st.write(f"R2 Score: {r2}")
 
-    # Data preprocessing for modeling
-    st.header("Sales Prediction Model")
+            # Prediksi
+            st.subheader("Prediksi Harga Rumah")
+            input_data = {col: st.number_input(f"Masukkan nilai untuk {col}", value=0) for col in feature_columns}
 
-    # Preprocess the data (convert 'Curah Hujan' to int, if needed)
-    if 'Curah Hujan (mm)' in df.columns:
-        df['Curah Hujan (mm)'] = df['Curah Hujan (mm)'].astype(int)
+            if st.button("Prediksi"):
+                input_df = pd.DataFrame([input_data])
+                prediction = model.predict(input_df)
+                st.success(f"Prediksi Harga Rumah: {prediction[0]}")
 
-    # Split data into features (X) and target (y)
-    X = df.drop(columns='Penjualan (pcs)')
-    y = df['Penjualan (pcs)']
-
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=4)
-
-    # Create and train the linear regression model
-    lin_reg = LinearRegression()
-    lin_reg.fit(X_train, y_train)
-
-    # Model evaluation
-    st.subheader("Model Performance")
-    accuracy = lin_reg.score(X_test, y_test)
-    st.write(f"Model R² Score: {accuracy:.2f}")
-
-    # Predict sales based on user inputs
-    st.header("Sales Prediction")
-    st.write("Provide the following values to predict the sales:")
-
-    hari = st.number_input("Hari", min_value=0, max_value=6, value=0)
-    tanggal = st.number_input("Tanggal", min_value=1, max_value=31, value=1)
-    kegiatan = st.number_input("Kegiatan", min_value=0, max_value=10, value=1)
-    curah_hujan = st.number_input("Curah Hujan (mm)", min_value=0, max_value=500, value=0)
-
-    # Predict the sales using the model
-    prediction = lin_reg.predict([[hari, tanggal, kegiatan, curah_hujan]])
-
-    st.write(f"Predicted Sales: {prediction[0]:,.0f} pcs")
-
+    except Exception as e:
+        st.error(f"Terjadi kesalahan saat memuat dataset: {e}")
+else:
+    st.info("Silakan upload file dataset untuk memulai.")
