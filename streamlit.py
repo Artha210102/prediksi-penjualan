@@ -31,11 +31,12 @@ if data_file is not None:
             st.subheader("Data")
             st.write(df.head())
             
-            # Informasi dataset
+           # Informasi dataset
             st.subheader("Informasi Dataset")
-            buffer = []
+            buffer = StringIO()
             df.info(buf=buffer)
-            st.text("".join(buffer))
+            info_str = buffer.getvalue()
+            st.text(info_str)
             
             # Statistik deskriptif
             st.subheader("Statistik Deskriptif")
