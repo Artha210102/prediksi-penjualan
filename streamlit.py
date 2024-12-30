@@ -7,24 +7,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from io import StringIO
 
-if data_file is not None:
-    try:
-        df = pd.read_excel(data_file)
-        st.success("Dataset berhasil dimuat!")
-        
-        # Pastikan dataset tidak kosong
-        if not df.empty:
-            st.subheader("Informasi Dataset")
-            from io import StringIO
-            buffer = StringIO()
-            df.info(buf=buffer)
-            info_str = buffer.getvalue()
-            st.text(info_str)
-        else:
-            st.error("Dataset kosong. Silakan unggah file yang sesuai.")
-    except Exception as e:
-        st.error(f"Terjadi kesalahan saat membaca dataset: {e}")
-
 # Judul aplikasi
 st.title("Analisis dan Prediksi Penjualan")
 
