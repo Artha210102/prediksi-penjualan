@@ -1,66 +1,91 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
 
 # Judul aplikasi
-st.title("Prediksi Harga Rumah dengan Streamlit")
+st.title("Analisis dan Prediksi Penjualan")
 
-# Upload file data
-data_file = st.file_uploader("Upload file dataset (CSV)", type=["csv"])
+# Upload file dataset
+data_file = st.file_uploader("Upload file dataset (XLSX)", type=["xlsx"])
 
 if data_file is not None:
     # Membaca dataset
     try:
-        df = pd.read_csv(data_file)
+        df = pd.read_excel(data_file)
         st.success("Dataset berhasil dimuat!")
 
         # Menampilkan data
         st.subheader("Data")
         st.write(df.head())
 
-        # Menampilkan informasi dataset
+        # Informasi dataset
         st.subheader("Informasi Dataset")
+        st.write(df.info())
+
+        # Statistik deskriptif
+        st.subheader("Statistik Deskriptif")
         st.write(df.describe())
 
-        # Memilih fitur dan target
-        st.subheader("Pilih Fitur dan Target")
-        all_columns = df.columns.tolist()
-        target_column = st.selectbox("Pilih kolom target (harga rumah)", all_columns)
-        feature_columns = st.multiselect("Pilih kolom fitur", all_columns, default=all_columns[:-1])
+        # Mengecek missing values
+        st.subheader("Cek Missing Values")
+        st.write(df.isnull().sum())
 
-        if target_column and feature_columns:
-            X = df[feature_columns]
-            y = df[target_column]
+        # Konversi tipe data jika diperlukan
+        if 'Curah Hujan (mm)' in df.columns:
+            df['Curah Hujan (mm)'] = df['Curah Hujan (mm)'].astype('int')
+
+        # Visualisasi Data
+        st.subheader("Visualisasi Data")
+        selected_column = st.selectbox("Pilih Kolom untuk Visualisasi", df.columns)
+        if selected_column:
+            fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+            sns.countplot(df[selected_column], ax=ax[0])
+            ax[0].set_title(f"Countplot: {selected_column}")
+            ax[1].boxplot(df[selected_column])
+            ax[1].set_title(f"Boxplot: {selected_column}")
+            st.pyplot(fig)
+
+        # Korelasi Data
+        st.subheader("Korelasi Antar Variabel")
+        st.write(df.corr())
+
+        # Pemodelan Data
+        st.subheader("Pemodelan Data")
+        if 'Penjualan (pcs)' in df.columns:
+            x = df.drop(columns='Penjualan (pcs)')
+            y = df['Penjualan (pcs)']
 
             # Split data
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=4)
 
-            # Melatih model
-            st.subheader("Pelatihan Model")
-            model = RandomForestRegressor(random_state=42)
-            model.fit(X_train, y_train)
+            # Linear Regression
+            lin_reg = LinearRegression()
+            lin_reg.fit(x_train, y_train)
 
-            # Evaluasi model
-            st.subheader("Evaluasi Model")
-            y_pred = model.predict(X_test)
-            mse = mean_squared_error(y_test, y_pred)
-            r2 = r2_score(y_test, y_pred)
-            st.write(f"Mean Squared Error: {mse}")
-            st.write(f"R2 Score: {r2}")
+            # Koefisien dan Intercept
+            st.write("Koefisien Model:", lin_reg.coef_)
+            st.write("Intercept Model:", lin_reg.intercept_)
 
-            # Prediksi
-            st.subheader("Prediksi Harga Rumah")
-            input_data = {col: st.number_input(f"Masukkan nilai untuk {col}", value=0) for col in feature_columns}
+            # Akurasi Model
+            score = lin_reg.score(x_test, y_test)
+            st.write("Akurasi Model (R²):", score)
+
+            # Prediksi Penjualan Optimal
+            st.subheader("Prediksi Penjualan Optimal")
+            hari = st.number_input("Masukkan Hari", value=0)
+            tanggal = st.number_input("Masukkan Tanggal", value=1)
+            kegiatan = st.number_input("Masukkan Kegiatan", value=1)
+            curah_hujan = st.number_input("Masukkan Curah Hujan (mm)", value=0)
 
             if st.button("Prediksi"):
-                input_df = pd.DataFrame([input_data])
-                prediction = model.predict(input_df)
-                st.success(f"Prediksi Harga Rumah: {prediction[0]}")
+                prediksi = lin_reg.predict([[hari, tanggal, kegiatan, curah_hujan]])
+                st.success(f"Hasil Prediksi Penjualan: {prediksi[0]} pcs")
 
     except Exception as e:
-        st.error(f"Terjadi kesalahan saat memuat dataset: {e}")
+        st.error(f"Terjadi kesalahan saat membaca dataset: {e}")
 else:
     st.info("Silakan upload file dataset untuk memulai.")
