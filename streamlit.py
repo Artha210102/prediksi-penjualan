@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+import streamlit as st
+st.title("Tes Streamlit")
+st.write("Jika ini muncul, aplikasi Streamlit Anda berjalan dengan baik!")
+
 
 # Judul aplikasi
 st.title("Analisis dan Prediksi Penjualan")
