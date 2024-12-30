@@ -7,6 +7,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from io import StringIO
 
+# Informasi dataset
+st.subheader("Informasi Dataset")
+buffer = StringIO()
+df.info(buf=buffer)
+info_str = buffer.getvalue()
+st.text(info_str)
+
 # Judul aplikasi
 st.title("Analisis dan Prediksi Penjualan")
 
